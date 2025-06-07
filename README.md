@@ -5,8 +5,9 @@ This repository includes scripts used for the paper:
 - DNA virus infections shape transposable elements activity in vitro and in vivo
 ```
 
+<img width="1186" alt="Screenshot 2025-06-07 at 06 43 42" src="https://github.com/user-attachments/assets/1efac98c-3f10-435c-9948-505c28d9b7c8" />
 
-<img width="595" alt="image" src="https://github.com/jiangtan01/Herpesviruses-mimic-zygotic-genome-activation-to-promote-viral-replication/assets/67500766/e82a2419-6969-4387-b935-7a7c92958f88">
+
 
 
 
