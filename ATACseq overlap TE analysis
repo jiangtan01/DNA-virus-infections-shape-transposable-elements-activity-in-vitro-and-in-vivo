@@ -1,0 +1,35 @@
+#############this script used for overlap ATAC peaks (in NC paper) with TE############
+###############TE upregulated in 4 timepoint overlap ATAC 4 timepoint###############
+grep -E -f DE_TE_in4timepoints.tsv /path/to/TEbed/rmsknew.summits.bed > up_TE.bed
+
+###############TE upregulated in 4 timepoint overlap ATAC_up 4 timepoint###############
+grep -E -f /path/to/HSV1/Output/DE_TE_in4timepoints.tsv /path/to/HSV1/ATAC_hff_12468hpi/human_mapping/CSAW_MACS2_HSV1_8hpi/TE_overlap_up8hpi.summits.bed > expressionUP_overlap_TEup.bed
+
+###########statistic############
+#######TEs binding up peaks############
+all_TE_name = read.table(file.path("/path/to/HSV1/noncoding.rnaseq.files.out","DESeq2_NC_HSV1.8hpi","repeat_name_DEresults.tsv"), sep="\t")
+all_TE_name=subset(all_TE_name,grepl("DNA|LTR|LINE|SINE", rownames(all_TE_name)))
+all_TE_name$symbol=gsub("^(.*?):.*","\\1",rownames(all_TE_name))
+all_TE_name=all_TE_name$symbol
+TE_up8hpi <- read.table("/path/to/HSV1/human_mapping/CSAW_MACS2_HSV1_8hpi/TE_overlap_up8hpi.summits.bed", header=FALSE, stringsAsFactors=FALSE)
+TE_up8hpi_name = unique(TE_up8hpi$V5) 
+TE_up8hpi_name=intersect(TE_up8hpi_name,all_TE_name)
+
+#######up expression TEs############
+up_expression_TEs = read.table(file.path("/path/to/HSV1/Output/DE_TE_in4timepoints.tsv"), sep="\t")
+up_expression_TEs_name=up_expression_TEs$V1
+
+intersect(TE_up8hpi_name,up_expression_TEs_name)
+
+
+#########overlap###############
+###############count the number and make venndiagram################
+library("VennDiagram") 
+
+p1=draw.pairwise.venn(area1 = 966,                
+                      area2 = 437,
+                      cross.area = 430,
+                      fill = c("#97FEED", "#F29727"),lty = "blank",
+                      category = c("up_TE_RNAseq", "up_TE_ATACseq"))
+grid.draw(p1)
+
