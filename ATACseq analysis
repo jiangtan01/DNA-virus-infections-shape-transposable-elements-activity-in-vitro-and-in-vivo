@@ -1,0 +1,243 @@
+############the ATAC-seq analyzed by snakepipes and overlap with TEs#############
+#####load snakepipes####### 
+module load snakePipes/2.2.3 &&cd /path/to/data/
+
+######DNA mapping####### 
+DNA-mapping -i /path/to/data/ -o /path/to/snakepipes.out -j 20 --DAG --fastqc --dedup --properPairs --mapq 3 --bwBinSize 25 hg38
+
+######peak calling#######
+ATAC-seq -d /path/to/snakepipes.out -j 20 hg38 /path/to/ATAC_config.yaml
+
+
+#########HSV1 atacseq##############
+module load deeptools &&cd /data/akhtar/suny/HSV1/TE_project/output/epi_HSV1
+
+SlurmEasy -t 50 "computeMatrix reference-point -R /data/akhtar/suny/HSV1/TE_project/TEbed/MLT2a2.summits.bed -S /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_mock_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_1hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_2hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_4hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_8hpi_rep1.filtered.bw --missingDataAsZero --skipZeros -p 50 -a 300 -b 300 -out MLT2a2_atac.gz -bs 5 && plotProfile -m MLT2a2_atac.gz -o MLT2a2_atac.pdf --samplesLabel mock 1hpi 2hpi 4hpi 8hpi --regionsLabel MLT2a2 --perGroup --legendLocation upper-left --plotWidth 5 --plotHeight 15 --colors '#00A9FF' '#54B435' '#F4CE14' '#EE9322' '#D80032' --plotType se" 
+
+
+##############DUX4 binding profile################
+SlurmEasy -t 50 "computeMatrix reference-point -R /data/akhtar/suny/HSV1/geng_DUX4_chipseq/human_mapping/MACS2/lenti_DUX4_rep1.filtered.BAM_summits.bed -S /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_mock_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_1hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_2hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_4hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_8hpi_rep1.filtered.bw --missingDataAsZero --skipZeros -p 50 -a 500 -b 500 -out lenti_DUX4binding_atac.gz -bs 5 && plotProfile -m lenti_DUX4binding_atac.gz -o lenti_DUX4binding_atac.pdf --samplesLabel mock 1hpi 2hpi 4hpi 8hpi --regionsLabel DUX4_binding --perGroup --legendLocation upper-left --plotWidth 5 --plotHeight 15 --colors '#749BC2' '#00A9FF' '#54B435' '#EE9322' '#D80032' --plotType se"
+
+
+
+##############ATAC TEs overlap up profile################
+################up TE ATAC profile ###################
+all_TE_name = read.table(file.path("/data/akhtar/suny/HSV1/TE_project/HSV1/NC_HSV1_RNAseq/noncoding.rnaseq.files.out","DESeq2_NC_HSV1.8hpi","repeat_name_DEresults.tsv"), sep="\t")
+all_TE_name=subset(all_TE_name,grepl("DNA|LTR|LINE|SINE", rownames(all_TE_name)))
+all_TE_name$symbol=gsub("^(.*?):.*","\\1",rownames(all_TE_name))
+all_TE_name$class=gsub("^.*:([^:]+)$", "\\1",rownames(all_TE_name))
+all_TE_name=all_TE_name$symbol
+
+write.table(rownames(all.merged),file=file.path("/data/akhtar/suny/HSV1/TE_project/TEbed/only_allTEs_name.tsv"),row.names = FALSE,quote = FALSE,col.names = FALSE)
+
+grep -E -f /data/akhtar/suny/HSV1/TE_project/TEbed/only_allTEs_name.tsv TE_overlap_up8hpi.summits.bed > TEonly_overlap_up8hpi.summits.bed
+
+
+###############plotHeatmap TEonly_overlap_up8hpi.summit#################
+SlurmEasy -t 50 "computeMatrix reference-point -R /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/CSAW_MACS2_HSV1_8hpi/TEonly_overlap_up8hpi.summits.bed -S /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_mock_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_2hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_4hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_6hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_8hpi_rep1.filtered.bw --missingDataAsZero --skipZeros -p 50 -a 1000 -b 1000 -out onlyTE_up_atac.gz -bs 5 && plotHeatmap -m onlyTE_up_atac.gz -o onlyTE_up_atac.pdf --samplesLabel mock 2hpi 4hpi 6hpi 8hpi --regionsLabel up_TEs --legendLocation upper-left --colorMap coolwarm --zMin -50 --zMax 50"
+
+
+##############ATAC TEs overlap down profile plotHeatmap################
+SlurmEasy -t 50 "computeMatrix reference-point -R /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/CSAW_MACS2_HSV1_8hpi/TE_overlap_down8hpi.summits.bed -S /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_mock_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_2hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_4hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_6hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_8hpi_rep1.filtered.bw --missingDataAsZero --skipZeros -p 50 -a 1000 -b 1000 -out HSV1_down_atac.gz -bs 5 && plotHeatmap -m HSV1_down_atac.gz -o HSV1_down_atac.pdf --samplesLabel mock 2hpi 4hpi 6hpi 8hpi --regionsLabel down_peaks --legendLocation upper-left --colorMap coolwarm --zMin -50 --zMax 50"
+
+
+
+##############H3K27ac TEs overlap up profile################
+################up TE ATAC profile ###################
+all_TE_name = read.table(file.path("/data/akhtar/suny/HSV1/TE_project/HSV1/NC_HSV1_RNAseq/noncoding.rnaseq.files.out","DESeq2_NC_HSV1.8hpi","repeat_name_DEresults.tsv"), sep="\t")
+all_TE_name=subset(all_TE_name,grepl("DNA|LTR|LINE|SINE", rownames(all_TE_name)))
+all_TE_name$symbol=gsub("^(.*?):.*","\\1",rownames(all_TE_name))
+all_TE_name=all_TE_name$symbol
+
+bedtools intersect -wb -b /data/akhtar/suny/HSV1/TE_project/TEbed/rmsknew.bed -a /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K27ac_8hpi/Filtered.results.UP.bed|awk '{ printf("%s\t%d\t%d\t%s\t%s\n", $1, int(($2 + $3) / 2), int(($2 + $3) / 2)+1, $6, $22) }' > repeat.H3K27acUP8hpi.summits.bed
+
+bedtools intersect -wb -b /data/akhtar/suny/HSV1/TE_project/TEbed/rmsknew.bed -a /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K27ac_8hpi/Filtered.results.UP.bed|awk '{ printf("%s\t%d\t%d\t%s\t%s\n", $1, $2,$3, $6, $22) }' > repeat.H3K27acUP8hpi.bed
+
+
+grep -E -f /data/akhtar/suny/HSV1/TE_project/TEbed/only_allTEs_name.tsv repeat.H3K27acUP8hpi.summits.bed > TEonly_overlap_H3K27acUP8hpi.summits.bed
+
+grep -E -f /data/akhtar/suny/HSV1/TE_project/TEbed/only_allTEs_name.tsv repeat.H3K27acUP8hpi.bed > TEonly_overlap_repeat.H3K27acUP8hpi.bed
+
+###############plotHeatmap TEonly_overlap_up8hpi.summit#################
+SlurmEasy -t 50 "computeMatrix reference-point -R /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K27ac_8hpi/TEonly_overlap_H3K27acUP8hpi.summits.bed -S /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27ac_HSV1_1hpi_merged.bw /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27ac_HSV1_2hpi_merged.bw /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27ac_HSV1_4hpi_merged.bw  /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27ac_HSV1_8hpi_merged.bw --missingDataAsZero --skipZeros -p 50 -a 1000 -b 1000 -out onlyTE_up_H3K27ac.gz -bs 5 && plotHeatmap -m onlyTE_up_H3K27ac.gz -o onlyTE_up_H3K27ac.pdf --samplesLabel 1hpi 2hpi 4hpi 8hpi --regionsLabel up_TEs --legendLocation upper-left --colorMap coolwarm --zMin -15 --zMax 15"
+
+
+
+##############H3K4me3 TEs overlap up profile################
+################up TE ATAC profile ###################
+bedtools intersect -wb -b /data/akhtar/suny/HSV1/TE_project/TEbed/rmsknew.bed -a /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K4me3_8hpi/Filtered.results.UP.bed|awk '{ printf("%s\t%d\t%d\t%s\t%s\n", $1, int(($2 + $3) / 2), int(($2 + $3) / 2)+1, $6, $22) }' > repeat.H3K4me3UP8hpi.summits.bed
+
+bedtools intersect -wb -b /data/akhtar/suny/HSV1/TE_project/TEbed/rmsknew.bed -a /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K4me3_8hpi/Filtered.results.UP.bed|awk '{ printf("%s\t%d\t%d\t%s\t%s\n", $1,$2,$3, $6, $22) }' > repeat.H3K4me3UP8hpi.bed
+
+grep -E -f /data/akhtar/suny/HSV1/TE_project/TEbed/only_allTEs_name.tsv repeat.H3K4me3UP8hpi.summits.bed > TEonly_overlap_H3K4me3UP8hpi.summits.bed
+
+grep -E -f /data/akhtar/suny/HSV1/TE_project/TEbed/only_allTEs_name.tsv repeat.H3K4me3UP8hpi.bed > TEonly_overlap_H3K4me3UP8hpi.bed
+
+
+###############plotHeatmap TEonly_overlap_up8hpi.summit#################
+SlurmEasy -t 50 "computeMatrix reference-point -R /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K4me3_8hpi/TEonly_overlap_H3K4me3UP8hpi.summits.bed -S /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K4me3_HSV1_1hpi_merged.bw /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K4me3_HSV1_2hpi_merged.bw /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K4me3_HSV1_4hpi_merged.bw  /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K4me3_HSV1_8hpi_merged.bw --missingDataAsZero --skipZeros -p 50 -a 1000 -b 1000 -out onlyTE_up_H3K4me3.gz -bs 5 && plotHeatmap -m onlyTE_up_H3K4me3.gz -o onlyTE_up_H3K4me3.pdf --samplesLabel 1hpi 2hpi 4hpi 8hpi --regionsLabel up_TEs --legendLocation upper-left --colorMap coolwarm --zMin -20 --zMax 20"
+
+
+###########merge bigwig file ##############
+module load WiggleTools/1.2.2 && cd /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare
+
+chromsize=/data/repository/organisms/GRCh38_ensembl/genome_fasta/genome.chrom.sizes
+
+SlurmEasy -t 50 "wiggletools mean H3K4me3_HSV1_1hpi* | wigToBigWig stdin $chromsize H3K4me3_HSV1_1hpi_merged.bw"
+
+
+module load deeptools &&cd /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/Output
+##############H3K27me3 TEs overlap down up profile################
+################down TE ATAC profile ###################
+bedtools intersect -wb -b /data/akhtar/suny/HSV1/TE_project/TEbed/rmsknew.bed -a /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K27me3_8hpi/Filtered.results.DOWN.bed|awk '{ printf("%s\t%d\t%d\t%s\t%s\n", $1, int(($2 + $3) / 2), int(($2 + $3) / 2)+1, $6, $22) }' > repeat.H3K27me3down8hpi.summits.bed
+
+grep -E -f /data/akhtar/suny/HSV1/TE_project/TEbed/only_allTEs_name.tsv repeat.H3K27me3down8hpi.summits.bed > TEonly_overlap_H3K27me3down8hpi.summits.bed
+
+bedtools intersect -wb -b /data/akhtar/suny/HSV1/TE_project/TEbed/rmsknew.bed -a /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K27me3_8hpi/Filtered.results.DOWN.bed|awk '{ printf("%s\t%d\t%d\t%s\t%s\n", $1, $2,$3, $6, $22) }' > repeat.H3K27me3down8hpi.bed
+
+grep -E -f /data/akhtar/suny/HSV1/TE_project/TEbed/only_allTEs_name.tsv repeat.H3K27me3down8hpi.bed > TEonly_overlap_H3K27me3down8hpi.bed
+
+###############plotHeatmap TEonly_overlap_up8hpi.summit#################
+SlurmEasy -t 50 "computeMatrix reference-point -R /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K27me3_8hpi/TEonly_overlap_H3K27me3down8hpi.summits.bed -S /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27me3_HSV1_1hpi_merged.bw /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27me3_HSV1_2hpi_merged.bw /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27me3_HSV1_4hpi_merged.bw  /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27me3_HSV1_8hpi_merged.bw --missingDataAsZero --skipZeros -p 50 -a 1000 -b 1000 -out onlyTE_down_H3K27me3.gz -bs 5 && plotHeatmap -m onlyTE_down_H3K27me3.gz -o onlyTE_down_H3K27me3.pdf --samplesLabel 1hpi 2hpi 4hpi 8hpi --regionsLabel up_TEs --legendLocation upper-left --colorMap coolwarm --zMin -7 --zMax 7"
+
+
+##############H3K9me3 TEs overlap down up profile################
+################down TE ATAC profile ###################
+bedtools intersect -wb -b /data/akhtar/suny/HSV1/TE_project/TEbed/rmsknew.bed -a /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K9me3_8hpi/Filtered.results.DOWN.bed|awk '{ printf("%s\t%d\t%d\t%s\t%s\n", $1, int(($2 + $3) / 2), int(($2 + $3) / 2)+1, $6, $22) }' > repeat.H3K9me3down8hpi.summits.bed
+
+bedtools intersect -wb -b /data/akhtar/suny/HSV1/TE_project/TEbed/rmsknew.bed -a /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K9me3_8hpi/Filtered.results.DOWN.bed|awk '{ printf("%s\t%d\t%d\t%s\t%s\n", $1,$2,$3, $6, $22) }' > repeat.H3K9me3down8hpi.bed
+
+grep -E -f /data/akhtar/suny/HSV1/TE_project/TEbed/only_allTEs_name.tsv repeat.H3K9me3down8hpi.summits.bed > TEonly_overlap_H3K9me3down8hpi.summits.bed
+
+grep -E -f /data/akhtar/suny/HSV1/TE_project/TEbed/only_allTEs_name.tsv repeat.H3K9me3down8hpi.bed > TEonly_overlap_H3K9me3down8hpi.bed
+
+###############plotHeatmap TEonly_overlap_up8hpi.summit#################
+SlurmEasy -t 50 "computeMatrix reference-point -R /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K9me3_8hpi/TEonly_overlap_H3K9me3down8hpi.summits.bed -S /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K9me3_HSV1_1hpi_merged.bw /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K9me3_HSV1_2hpi_merged.bw /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K9me3_HSV1_4hpi_merged.bw  /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K9me3_HSV1_8hpi_merged.bw --missingDataAsZero --skipZeros -p 50 -a 1000 -b 1000 -out onlyTE_down_H3K9me3.gz -bs 5 && plotHeatmap -m onlyTE_down_H3K9me3.gz -o onlyTE_down_H3K9me3.pdf --samplesLabel 1hpi 2hpi 4hpi 8hpi --regionsLabel up_TEs --legendLocation upper-left --colorMap coolwarm --zMin -8 --zMax 8"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############TE upregulated in 4 timepoint overlap ATAC 4 timepoint###############
+grep -E -f DE_TE_in4timepoints.tsv /data/akhtar/suny/HSV1/TE_project/TEbed/rmsknew.summits.bed > up_TE.bed
+
+###############TE upregulated in 4 timepoint overlap ATAC_up 4 timepoint###############
+grep -E -f /data/akhtar/suny/HSV1/TE_project/HSV1/NC_HSV1_RNAseq/Output/DE_TE_in4timepoints.tsv /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/CSAW_MACS2_HSV1_8hpi/TE_overlap_up8hpi.summits.bed > expressionUP_overlap_TEup.bed
+
+###########statistic############
+#######TEs binding up peaks############
+all_TE_name = read.table(file.path("/data/akhtar/suny/HSV1/TE_project/HSV1/NC_HSV1_RNAseq/noncoding.rnaseq.files.out","DESeq2_NC_HSV1.8hpi","repeat_name_DEresults.tsv"), sep="\t")
+all_TE_name=subset(all_TE_name,grepl("DNA|LTR|LINE|SINE", rownames(all_TE_name)))
+all_TE_name$symbol=gsub("^(.*?):.*","\\1",rownames(all_TE_name))
+all_TE_name=all_TE_name$symbol
+TE_up8hpi <- read.table("/data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/CSAW_MACS2_HSV1_8hpi/TE_overlap_up8hpi.summits.bed", header=FALSE, stringsAsFactors=FALSE)
+TE_up8hpi_name = unique(TE_up8hpi$V5) 
+TE_up8hpi_name=intersect(TE_up8hpi_name,all_TE_name)
+
+#######up expression TEs############
+up_expression_TEs = read.table(file.path("/data/akhtar/suny/HSV1/TE_project/HSV1/NC_HSV1_RNAseq/Output/DE_TE_in4timepoints.tsv"), sep="\t")
+up_expression_TEs_name=up_expression_TEs$V1
+
+intersect(TE_up8hpi_name,up_expression_TEs_name)
+
+
+#########overlap###############
+###############make venndiagram################
+library("VennDiagram") 
+
+p1=draw.pairwise.venn(area1 = 966,                
+                      area2 = 437,
+                      cross.area = 430,
+                      fill = c("#97FEED", "#F29727"),lty = "blank",
+                      category = c("up_TE_RNAseq", "up_TE_ATACseq"))
+grid.draw(p1)
+
+
+
+
+
+
+#############repeats_up8hpi.summits plotHeatmap##############
+SlurmEasy -t 50 "computeMatrix reference-point -R /data/akhtar/suny/HSV1/TE_project/HSV1/NC_HSV1_RNAseq/Output/up_TE.bed -S /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_mock_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_2hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_4hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_6hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_8hpi_rep1.filtered.bw --missingDataAsZero --skipZeros -p 50 -a 150 -b 150 -out up_TE_atac.gz -bs 5 && plotHeatmap -m up_TE_atac.gz -o up_TE_atac.pdf --samplesLabel mock 2hpi 4hpi 6hpi 8hpi --regionsLabel up_TE --legendLocation upper-left --colorMap coolwarm --zMin 0 --zMax 1.5"
+
+
+SlurmEasy -t 50 "plotHeatmap -m up_TE_atac.gz -o up_TE_atac.pdf --samplesLabel mock 2hpi 4hpi 6hpi 8hpi --regionsLabel up_TE --legendLocation upper-left --colorMap coolwarm --zMin 0 --zMax 1.5"
+
+
+
+
+
+
+#############HSV1_lenti_overlap.summits.bed plotProfile##############
+
+SlurmEasy -t 50 "computeMatrix reference-point -R /data/akhtar/suny/HSV1/geng_DUX4_chipseq/human_mapping/MACS2/HSV1_lenti_overlap.summits.bed -S /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_mock_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_1hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_2hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_4hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_8hpi_rep1.filtered.bw --missingDataAsZero --skipZeros -p 50 -a 500 -b 500 -out HSV1lentiOverlap_DUX4binding_atac.gz -bs 5 && plotProfile -m HSV1lentiOverlap_DUX4binding_atac.gz -o HSV1lentiOverlap_DUX4binding_atac.pdf --samplesLabel mock 1hpi 2hpi 4hpi 8hpi --regionsLabel DUX4_binding --perGroup --legendLocation upper-left --plotWidth 5 --plotHeight 15 --colors '#749BC2' '#00A9FF' '#54B435' '#EE9322' '#D80032' --plotType se"
+
+
+#############SRR14605772_DUX4CHIP_14hpi_yes.filtered.BAM_summits plotProfile##############
+
+SlurmEasy -t 50 "computeMatrix reference-point -R /data/akhtar/suny/HSV1/TE_project/HSV1/GSE174759/CHIP_seq/new_14h.snakepipes.out/MACS2/SRR14605772_DUX4CHIP_14hpi_yes.filtered.BAM_summits.bed -S /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_mock_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_1hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_2hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_4hpi_rep1.filtered.bw /data/akhtar/suny/HSV1/TE_project/HSV1/ATAC_hff_12468hpi/human_mapping/deepTools_ATAC/bamCompare/ATAC_HFF_HSV1_8hpi_rep1.filtered.bw --missingDataAsZero --skipZeros -p 50 -a 500 -b 500 -out HSV1_DUX4binding_atac.gz -bs 5 && plotProfile -m HSV1_DUX4binding_atac.gz -o HSV1_DUX4binding_atac.pdf --samplesLabel mock 1hpi 2hpi 4hpi 8hpi --regionsLabel DUX4_binding --perGroup --legendLocation upper-left --plotWidth 5 --plotHeight 15 --colors '#749BC2' '#00A9FF' '#54B435' '#EE9322' '#D80032' --plotType lines"
+
+
+#########HSV1 H3K27ac##############
+SlurmEasy -t 50 "computeMatrix reference-point -R /data/akhtar/suny/HSV1/geng_DUX4_chipseq/human_mapping/MACS2/lenti_DUX4_rep1.filtered.BAM_summits.bed -S /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_HSV1_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27ac_HSV1_1hpi_SRR8422128.filtered.subtract.Input_HSV1_1hpi_SRR8422174.bw /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_HSV1_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27ac_HSV1_2hpi_SRR8422130.filtered.subtract.Input_HSV1_2hpi_SRR8422177.bw /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_HSV1_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27ac_HSV1_4hpi_SRR8422132.filtered.subtract.Input_HSV1_4hpi_SRR8422180.bw /data/akhtar/suny/HSV1/TE_project/HSV1/epi_HSV1_monocyte/human_HSV1_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27ac_HSV1_8hpi_SRR8422134.filtered.subtract.Input_HSV1_8hpi_SRR8422183.bw --missingDataAsZero --skipZeros -p 50 -a 500 -b 500 -out lenti_DUX4binding_H3K27ac2.gz -bs 5 && plotProfile -m lenti_DUX4binding_H3K27ac2.gz -o lenti_DUX4binding_H3K27ac2.pdf --samplesLabel 1hpi 2hpi 4hpi 8hpi --regionsLabel DUX4binding --perGroup --legendLocation upper-left --plotWidth 5 --plotHeight 15 --colors '#54B435' '#F4CE14' '#EE9322' '#D80032' --plotType lines"
+
+
+
+
+
+###############5 maker overlap###############
+bedtools intersect -a TE_overlap_ATAC_up8hpi.bed -b TEonly_overlap_H3K27me3down8hpi.bed TEonly_overlap_H3K4me3UP8hpi.bed TEonly_overlap_H3K9me3down8hpi.bed TEonly_overlap_repeat.H3K27acUP8hpi.bed > overlap_5_8hpi.bed
+
+###############ATAC H3K27ac overlap###############
+bedtools intersect -a TE_overlap_ATAC_up8hpi.bed -b TEonly_overlap_repeat.H3K27acUP8hpi.bed > overlap_ATAC_H3K27ac_8hpi.bed
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###################multiome atac DUX ko analysis############
+
+module load deeptools &&cd /data/akhtar/suny/HSV1/HSV1multiomics_test/Output/TE
+
+SlurmEasy -t 50 "computeMatrix reference-point -R /data/akhtar/suny/HSV1/geng_DUX4_chipseq/human_mapping/MACS2/overlap_rep1_MLTs.bed -S /data/akhtar/suny/HSV1/HSV1multiomics_test/WT/outs/atac_cut_sites.bigwig /data/akhtar/suny/HSV1/HSV1multiomics_test/KO/outs/atac_cut_sites.bigwig --missingDataAsZero --skipZeros -p 50 -a 500 -b 500 -out MLTs_atac.gz -bs 5 && plotProfile -m MLTs_atac.gz -o MLTs_atac.pdf --samplesLabel WT KO --regionsLabel MLTs --perGroup --legendLocation upper-left --plotWidth 5 --plotHeight 15 --colors '#5CD2E6' '#FF9130' --plotType se" 
+
+
+
+SlurmEasy -t 50 "computeMatrix reference-point -R /data/akhtar/suny/HSV1/geng_DUX4_chipseq/human_mapping/MACS2/overlap_rep1_THEs.bed -S /data/akhtar/suny/HSV1/HSV1multiomics_test/WT/outs/atac_cut_sites.bigwig /data/akhtar/suny/HSV1/HSV1multiomics_test/KO/outs/atac_cut_sites.bigwig --missingDataAsZero --skipZeros -p 50 -a 500 -b 500 -out THEs_atac.gz -bs 5 && plotProfile -m THEs_atac.gz -o THEs_atac.pdf --samplesLabel WT KO --regionsLabel THEs --perGroup --legendLocation upper-left --plotWidth 5 --plotHeight 15 --colors '#5CD2E6' '#FF9130' --plotType se" 
+
+SlurmEasy -t 50 "computeMatrix reference-point -R /data/akhtar/suny/HSV1/geng_DUX4_chipseq/human_mapping/MACS2/overlap_rep1_LINE1.bed -S /data/akhtar/suny/HSV1/HSV1multiomics_test/WT/outs/atac_cut_sites.bigwig /data/akhtar/suny/HSV1/HSV1multiomics_test/KO/outs/atac_cut_sites.bigwig --missingDataAsZero --skipZeros -p 50 -a 800 -b 300 -out LINE1_atac.gz -bs 5 && plotProfile -m LINE1_atac.gz -o LINE1_atac.pdf --samplesLabel WT KO --regionsLabel LINE1 --perGroup --legendLocation upper-left --plotWidth 5 --plotHeight 15 --colors '#5CD2E6' '#FF9130' --plotType se" 
+
+
+SlurmEasy -t 50 "computeMatrix reference-point -R /data/akhtar/suny/HSV1/geng_DUX4_chipseq/human_mapping/MACS2/no_overlap_rep1_TEs.bed -S /data/akhtar/suny/HSV1/HSV1multiomics_test/WT/outs/atac_cut_sites.bigwig /data/akhtar/suny/HSV1/HSV1multiomics_test/KO/outs/atac_cut_sites.bigwig --missingDataAsZero --skipZeros -p 50 -a 500 -b 500 -out no_TEs_overlap_atac.gz -bs 5 && plotProfile -m no_TEs_overlap_atac.gz -o no_TEs_overlap_atac.pdf --samplesLabel WT KO --regionsLabel no_TEs_overlap --perGroup --legendLocation upper-left --plotWidth 5 --plotHeight 15 --colors '#5CD2E6' '#FF9130' --plotType se" 
