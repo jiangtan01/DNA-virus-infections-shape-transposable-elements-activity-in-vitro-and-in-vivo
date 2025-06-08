@@ -1,4 +1,4 @@
-########### Bulk TE analysis did by the pipeline snakepipes##############
+########### Bulk TE analysis did by snakepipes##############
 #####################################################
 ###########HFF_DUX4induce_RNAseq as example###########
 #######mapping and DE TE analysis############
@@ -273,5 +273,5 @@ p1=pheatmap(HFF_DUX4induce_4h_counts,
             breaks = breaks)
 
 # Save the heatmap to an image file
-ggsave("/data/akhtar/suny/HSV1/TE_project/RNAseq_review/HFF_DUX4induce/Output/HFF_DUX4induce_4h_counts_DUX4target_log.heatmap.pdf", plot = p1, width = 2.5, height = 6)
+ggsave("path/output/HFF_DUX4induce/Output/HFF_DUX4induce_4h_counts_DUX4target_log.heatmap.pdf", plot = p1, width = 2.5, height = 6)
 
