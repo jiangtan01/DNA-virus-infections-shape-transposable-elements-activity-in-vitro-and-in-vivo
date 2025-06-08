@@ -1,41 +1,45 @@
+############this scripts is used for KAP1 CUT&RUN and overlap with TEs####################
+################all hg38 analysis##################
+cd path/to/data && module load snakepipes2.7.2
 
-#########for the DUX4 binding motif analysis#############
-#Libraries to load
-library(ChIPseeker)
-library(clusterProfiler)
-library(dplyr)
-library(GenomicRanges)
-library(rtracklayer)
-library(DNAshapeR)
-library(BSgenome)
+DNA-mapping -i path/to/data -o files.out -j 20 --alignerOpts '--local --very-sensitive-local --no-mixed --no-discordant --phred33 -I 0 -X 2000 -k 5' hg38
 
-#Load genome
-genome <- library(BSgenome.Hsapiens.UCSC.hg19)
-genome <- getBSgenome("BSgenome.Hsapiens.UCSC.hg19")
+ChIP-seq -d path/to/files.out -j 20 --cutntag --useSpikeInForNorm --getSizeFactorsFrom genome hg38 CHIPseq_config.yaml
 
-#Load Data
-peak2h <- read.table("HEK_DUX4_2h_br1_sorted_bam_peaks.xls", header = T)
-peak4h <- read.table("HEK_DUX4_4h_br1_sorted_bam_peaks.xls", header = T)
-peak6h <- read.table("HEK_DUX4_6h_br1_sorted_bam_peaks.xls", header = T)
-peak8h <- read.table("HEK_DUX4_8h_br1_sorted_bam_peaks.xls", header = T
-peak10h <- read.table("HEK_DUX4_10h_br1_sorted_bam_peaks.xls", header = T)
-peak12h <- read.table("Renamed_HEK_DUX4_12h_br1_sorted_bam_peaks.xls", header = T)
+###########TE binding KAP1###############
+##########intersect TEs and peakers##################
+cd path/to/data/Output && module load bedtools
 
-#combine all in one
-all <- rbind(peak2h, peak4h, peak6h, peak8h, peak10h, peak12h)
+bedtools intersect -wb -a path/to/files.out/MACS2/*.BAMPE_summits.bed -b /path/to/rmsknew.bed > overlap_KAP1_TEs.bed
 
-# +/- 50bp around the center
-all = makeGRangesFromDataFrame(all, keep.extra.columns = TRUE)
+#########down stream analysis############
+#####calculte overlapped TEs that interesting,overlap_14hpi example#########
 
-#Remove HSV1
-chromosome_to_remove <- "chrHSV1"
-gr_filtered <- subset(all, seqnames(all) != chromosome_to_remove)
-gr_filtered <- keepSeqlevels(gr_filtered, setdiff(seqlevels(gr_filtered), chromosome_to_remove))
-seqlevels(gr_filtered)
-allred <- reduce(gr_filtered)
-allcenter = resize(allred, width = 100, fix='center')
-export.bed(allcenter,con='allcenter.bed')
+###############each TEs intersect count###############
+overlap_14hpi_TEs <- read.table("data/to/overlap_14hpi_TEs.bed", header=FALSE, stringsAsFactors=FALSE)
+overlap_TEbinding=as.data.frame(table(overlap_14hpi_TEs$V8))
+overlap_TEbinding=overlap_TEbinding[order(overlap_TEbinding$Freq, decreasing = TRUE),]
 
-#Get Fasta-File
-genome <- getBSgenome("BSgenome.Hsapiens.UCSC.hg19")
-getFasta(allcenter, genome, width = 100, filename = "allcenter")
+########sunset MLTs THEs Alu LINE1#############
+MLTs=sum(overlap_TEbinding[grep("MLT", overlap_TEbinding$Var1),]$Freq)
+THEs=sum(overlap_TEbinding[grep("THE", overlap_TEbinding$Var1),]$Freq)
+Alu=sum(overlap_TEbinding[grep("Alu", overlap_TEbinding$Var1),]$Freq)
+LINE1=sum(overlap_TEbinding[grep("L1", overlap_TEbinding$Var1),]$Freq)
+
+
+########make plot##########
+TEs_binding<- data.frame (TEs  = c("MLTs", "THEs","Alu","LINE1"),
+                          num = c(MLTs,THEs,Alu,LINE1))
+
+TEs_binding$TEs <- factor(TEs_binding$TEs,levels = c("MLTs", "THEs","Alu","LINE1"))
+
+p1=ggplot(data=TEs_binding, aes(x="", y=num, fill=TEs)) + geom_col(show.legend = FALSE)+
+  geom_text(aes(label = TEs), 
+            position = position_stack(vjust = 0.5)) +
+  scale_fill_brewer(palette = "Set2") + 
+  theme_classic() +
+  labs(x="", y="Numbers") +
+  scale_fill_manual(values=c("#DB005B80","#9ADE7B80","#068FFF80","#A459D180"))
+
+
+ggsave(file = file.path("path/to/output/","Barplot_overlap_TEbinding.pdf"), plot = p1, width = 1.5, height = 5)
