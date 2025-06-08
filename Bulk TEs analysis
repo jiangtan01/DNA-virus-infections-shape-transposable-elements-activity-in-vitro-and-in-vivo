@@ -238,3 +238,4 @@ p1=ggplot(data=TEs_THE, aes(x=log2FoldChange, y=-log10(padj), label=symbol)) +
 
 ggsave(file = file.path(prewd,"Output","Volcano_THE_HFF_DUX4induce_24h.pdf"), plot = p1, width = 6, height = 6)
 
+###############each time points did in a same way###############
