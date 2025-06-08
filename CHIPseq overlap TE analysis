@@ -6,7 +6,7 @@ module load snakePipes/2.2.3 &&cd /path/to/data/
 DNA-mapping -i /path/to/data/ -o /path/to/snakepipes.out -j 20 --DAG --fastqc --dedup --properPairs --mapq 3 --bwBinSize 25 hg38
 
 ######peak calling#######
-CHIP-seq -d /path/to/snakepipes.out -j 20 hg38 /path/to/ATAC_config.yaml
+CHIP-seq -d /path/to/snakepipes.out -j 20 hg38 /path/to/config.yaml
 
 
 ###############plotHeatmap TEonly_overlap_up8hpi.summit#################
