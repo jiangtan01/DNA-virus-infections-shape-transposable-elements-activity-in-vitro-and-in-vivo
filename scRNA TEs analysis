@@ -1,4 +1,4 @@
-#############this scripts used for the singele cell RNAseq data of virus related cancer patients analysis#################
+#############this scripts used for the singele cell RNAseq data of virus related cancer patients TE analysis#################
 
 #############MCV patients TE analysis##############
 ############# mapping to hg38 by snakepipes#############
@@ -16,7 +16,6 @@ cd /path/to/data/ && conda activate scTE
 
 ############start all #########
 for i in /path/to/output/*subset.bam; do j=`echo $i |rev |cut -d "/" -f1 |rev`; SlurmEasy -t 20 -m 9635 "scTE -i $i -o $j -x scTE/hg38.exclusive.idx -p 20 --hdf5 True -CB CB -UMI UB"; done
-
 
 
 #############################################
@@ -46,7 +45,7 @@ library(rtracklayer)
 library(SeuratDisk)
 
 ###convert h5ad to seurat file########
-file_list <- list.files(path = "path/to/sc_MCV_patient/scTE", pattern = "*.subset.bam.h5ad", full.names = T)
+file_list <- list.files(path = "path/to/sc_MCV_patient/scTE", pattern = "*.h5ad", full.names = T)
 
 for (f in file_list)
 {
@@ -54,31 +53,31 @@ for (f in file_list)
 }
 
 # Load the retransfer seurat file and create a Seurat object
-p1_object <- LoadH5Seurat("/data/akhtar/suny/HSV1/sc_MCV_patient/scTE/p1.subset.bam.h5seurat", verbose=FALSE)
+p1_object <- LoadH5Seurat("path/to/sc_MCV_patient/scTE/p1.h5seurat", verbose=FALSE)
 p1_object <- as.matrix(GetAssayData(p1_object))
 p1_object = CreateSeuratObject(counts = p1_object)
 
-p3_object <- LoadH5Seurat("/data/akhtar/suny/HSV1/sc_MCV_patient/scTE/p3.subset.bam.h5seurat", verbose=FALSE)
+p3_object <- LoadH5Seurat("path/to/HSV1/sc_MCV_patient/scTE/p3.h5seurat", verbose=FALSE)
 p3_object <- as.matrix(GetAssayData(p3_object))
 p3_object = CreateSeuratObject(counts = p3_object)
 
-p2_object <- LoadH5Seurat("/data/akhtar/suny/HSV1/sc_MCV_patient/scTE/p2.subset.bam.h5seurat", verbose=FALSE)
+p2_object <- LoadH5Seurat("path/to/HSV1/sc_MCV_patient/scTE/p2.h5seurat", verbose=FALSE)
 p2_object <- as.matrix(GetAssayData(p2_object))
 p2_object = CreateSeuratObject(counts = p2_object)
 
-p6_object <- LoadH5Seurat("/data/akhtar/suny/HSV1/sc_MCV_patient/scTE/p6.subset.bam.h5seurat", verbose=FALSE)
+p6_object <- LoadH5Seurat("path/to/HSV1/sc_MCV_patient/scTE/p6.h5seurat", verbose=FALSE)
 p6_object <- as.matrix(GetAssayData(p6_object))
 p6_object = CreateSeuratObject(counts = p6_object)
 
-p7_object <- LoadH5Seurat("/data/akhtar/suny/HSV1/sc_MCV_patient/scTE/p7.subset.bam.h5seurat", verbose=FALSE)
-p7_object <- as.matrix(GetAssayData(p7_object))
-p7_object = CreateSeuratObject(counts = p7_object)
+p4_object <- LoadH5Seurat("path/to/HSV1/sc_MCV_patient/scTE/p4.h5seurat", verbose=FALSE)
+p4_object <- as.matrix(GetAssayData(p4_object))
+p4_object = CreateSeuratObject(counts = p4_object)
 
-p5_object <- LoadH5Seurat("/data/akhtar/suny/HSV1/sc_MCV_patient/scTE/p5.subset.bam.h5seurat", verbose=FALSE)
+p5_object <- LoadH5Seurat("path/to/HSV1/sc_MCV_patient/scTE/p5.h5seurat", verbose=FALSE)
 p5_object <- as.matrix(GetAssayData(p5_object))
 p5_object = CreateSeuratObject(counts = p5_object)
 
-All_merged_object <- merge(p1_object, y = c(p2_object,p3_object,p5_object,p6_object,p7_object), add.cell.ids = c("p1","p2","p3","p4","p5","p6"), project = "pos")
+All_merged_object <- merge(p1_object, y = c(p2_object,p3_object,p4_object,p5_object,p6_object), add.cell.ids = c("p1","p2","p3","p4","p5","p6"), project = "pos")
 All_merged_object[["percent.mt"]] <- PercentageFeatureSet(All_merged_object, pattern = "^MT-")
 VlnPlot(All_merged_object, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
 all.objects.merge <- subset(all.objects.merge, subset = nFeature_RNA > 200 & nFeature_RNA < 12000 & percent.mt < 25)
@@ -102,24 +101,7 @@ All_merged_object <- FindNeighbors(All_merged_object, dims = 1:10)
 All_merged_object <- FindClusters(All_merged_object, resolution = 0.1)
 All_merged_object <- RunUMAP(All_merged_object, dims = 1:10)
 
-###########merge MCV reads from all.objects.merge file before#############
-all.objects.merge$MCV= rowSums(FetchData(object = all.objects.merge, vars = c("ADE45414", "ADE45415","ADE45416","ADE45416.1","ADE45417")))
-# Generate new row names based on the original.ident column
-new_row_names <- gsub("-.*", "",rownames(all.objects.merge[[]]))
-# Assign the new row names to the data matrix
-newMCV <- all.objects.merge$MCV
-names(newMCV) <- new_row_names
-All_merged_object$MCV=newMCV
-All_merged_object$MCV[is.na(All_merged_object$MCV)] <- 0
-
-new.cluster.ids <- c("Astrocyte","Neurons","T cells","Neurons","B cells","T cells","Neurons","Endothelial","Monocyte","B cells")
-names(new.cluster.ids) <- levels(All_merged_object)
-All_merged_object <- RenameIdents(All_merged_object, new.cluster.ids)
-
-All_merged_object$allDUX4target= rowSums(FetchData(object = All_merged_object, vars = c("PITX1","DUX4","FRG2B","FRG2C","TRIM72","DUXA", "ZSCAN4", "TRIM43","TRIM48","TRIM49C","TRIM49B", "TRIM49","PRAMEF2","ZSCAN5C","TRIM43B")))
-p1=FeaturePlot(All_merged_object, features = c("allDUX4target"), order=TRUE, pt.size = 0.1,max.cutoff=1.5,label = FALSE,reduction="umap",cols = c("#dddddd", "#fd3a69"),raster=FALSE)
-ggsave(plot = p1, filename = file.path(prewd, "Output", paste0("pos_allDUX4target.pdf")), dpi = 600, width=4.5,height =3, useDingbats = TRUE)
-
+##############make the plot for the TE interesting##############
 All_merged_object$MLTs= rowSums(FetchData(object = All_merged_object, vars = c("MLT1A","MLT1A0","MLT1B","MLT1D","MLT1E1A","MLT1F2", "MLT2A1", "MLT2A2","MLT1F1","MLT1K","MLT1L","MLT1E1","MLT1O","MLT1N2","MLT1C","MLT2B2","MLT1H2","MLT1E2","MLT1E3","MLT1I","MLT1J","MLT1J2","MLT2B3")))
 p1=FeaturePlot(All_merged_object, features = c("MLTs"), order=TRUE, pt.size = 0.1,reduction="umap", max.cutoff=30, keep.scale = "all")+ scale_color_gradientn(colors = c("#dddddd","#dddddd","#dddddd","#dddddd","#dddddd","#dddddd","#dddddd","#FF9B9B","#fd3a69","#fd3a69"))
 ggsave(plot = p1, filename = file.path(prewd, "Output", paste0("pos_MLTs.pdf")), dpi = 300, width=4.5,height =3, useDingbats = TRUE)
@@ -128,17 +110,11 @@ All_merged_object$THEs= rowSums(FetchData(object = All_merged_object, vars = c("
 p1=FeaturePlot(All_merged_object, features = c("THEs"), order=TRUE, pt.size = 0.1,reduction="umap", max.cutoff=8, keep.scale = "all")+ scale_color_gradientn(colors = c("#dddddd","#dddddd","#dddddd","#dddddd","#dddddd","#dddddd","#dddddd","#dddddd","#FF9B9B","#fd3a69","#fd3a69"))
 ggsave(plot = p1, filename = file.path(prewd, "Output", paste0("pos_THEs.pdf")), dpi = 300, width=4.5,height =3, useDingbats = TRUE)
 
-p1=FeaturePlot(All_merged_object, features = c("MCV"), order=TRUE, pt.size = 0.1, max.cutoff=0.5,label = FALSE,reduction="umap",raster=FALSE)
-ggsave(plot = p1, filename = file.path(prewd, "Output", paste0("pos_MCV.png")), dpi = 600, width=4.5,height =3, useDingbats = TRUE)
 
 ########patient dot vln plot##########
-p1=DimPlot(All_merged_object, reduction = "umap",group.by = "orig.ident",repel = FALSE)
-ggsave(plot = p1, filename = file.path(prewd, "Output", paste0("MCV_orig.ident.pdf")), dpi = 600, width=4.5,height =3, useDingbats = TRUE)
-
-allDUX4target <-c("DUX4","PITX1","FRG2B","FRG2C","TRIM72","DUXA", "ZSCAN4", "TRIM43","RFPL4A","TRIM48","PRAMEF2","ZSCAN5C","TRIM49B","TRIM43B", "TRIM49", "RFPL4AL1")
 MLTs <-c("MLT1A","MLT1A0","MLT1B","MLT1D","MLT1E1A","MLT1F2", "MLT2A1", "MLT2A2","MLT1F1","MLT1K","MLT1L","MLT1E1","MLT1O","MLT1N2","MLT1C","MLT2B2","MLT1H2","MLT1E2","MLT1E3","MLT1I","MLT1J","MLT1J2","MLT2B3")
 THEs <- c("THE1A","THE1B","THE1C","THE1D")
-list = c("MCV","allDUX4target","MLTs","THEs")
+list = c("MLTs","THEs")
 
 p1=DotPlot(All_merged_object, features = list) + RotatedAxis()
 ggsave(plot = p1, filename = file.path(prewd, "Output", paste0("dot.pdf")), dpi = 600, width=5,height =5, useDingbats = TRUE)
@@ -146,10 +122,6 @@ ggsave(plot = p1, filename = file.path(prewd, "Output", paste0("dot.pdf")), dpi 
 
 ######VlnPlot########
 my_comparisons <- list( c("Astrocyte", "Neurons"), c("T cells", "Neurons"), c("B cells", "Neurons"), c("Endothelial", "Neurons"), c("Monocyte", "Neurons"))
-p1=VlnPlot(All_merged_object, features = "MCV") + RotatedAxis()+ theme(legend.position = 'none')+  stat_compare_means(comparisons = my_comparisons, label = "p.signif",label.y = c(4,4.4,4.8,5.2,5.6,6))+ylim(0,6)
-ggsave(plot = p1, filename = file.path(prewd, "Output", paste0("MCV_vln.pdf")), dpi = 600, width=5,height =5, useDingbats = TRUE)
-p1=VlnPlot(All_merged_object, features = "allDUX4target") + RotatedAxis()+ theme(legend.position = 'none')+  stat_compare_means(comparisons = my_comparisons, label = "p.signif",label.y = c(16.5,18,19.5,21,22.5,24))+ylim(0,24)
-ggsave(plot = p1, filename = file.path(prewd, "Output", paste0("allDUX4target_vln.pdf")), dpi = 600, width=5,height =5, useDingbats = TRUE)
 p1=VlnPlot(All_merged_object, features = "MLTs") + RotatedAxis()+ theme(legend.position = 'none')+  stat_compare_means(comparisons = my_comparisons, label = "p.signif",label.y = c(50,54,58,62,66,72))+ylim(0,73)
 ggsave(plot = p1, filename = file.path(prewd, "Output", paste0("MLTs_vln.pdf")), dpi = 600, width=5,height =5, useDingbats = TRUE)
 p1=VlnPlot(All_merged_object, features = "THEs") + RotatedAxis() + theme(legend.position = 'none')+  stat_compare_means(comparisons = my_comparisons, label = "p.signif",label.y = c(13,14,15,16,17,18))+ylim(0,18)
@@ -157,15 +129,9 @@ ggsave(plot = p1, filename = file.path(prewd, "Output", paste0("THEs_vln.pdf")),
 
 
 #########heatmap############  
-prewd="/data/akhtar/suny/HSV1/sc_MCV_patient/"
+prewd="/path/to/sc_MCV_patient/"
 
 ############MLT and THE list##############
-HSV1_8hpi = read.table(file.path("/data/akhtar/suny/HSV1/TE_project/HSV1/NC_HSV1_RNAseq/","noncoding.rnaseq.files.out","DESeq2_NC_HSV1.8hpi","repeat_name_DEresults.tsv"), sep="\t")
-all_HSV1_8hpi=subset(HSV1_8hpi,grepl("MLT|THE", rownames(HSV1_8hpi)))
-all_HSV1_8hpi=subset(all_HSV1_8hpi,!grepl("-int", rownames(all_HSV1_8hpi)))
-all_HSV1_8hpi$symbol=gsub("^(.*?):.*","\\1",rownames(all_HSV1_8hpi))
-
-
 p1 = DoHeatmap(all.objects.merge,size = 5.5,
                hjust = 0,
                group.by = "ident",
