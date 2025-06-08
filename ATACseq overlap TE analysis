@@ -33,3 +33,4 @@ p1=draw.pairwise.venn(area1 = 966,
                       category = c("up_TE_RNAseq", "up_TE_ATACseq"))
 grid.draw(p1)
 
+###############just repeat this script for each time points###############
