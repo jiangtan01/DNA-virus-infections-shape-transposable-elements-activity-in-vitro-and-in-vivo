@@ -25,7 +25,7 @@ Accompanying sequencing data is available in the GEO of this paper.
 * Bulk TEs analysis
 * CHIP-seq TEs analysis
 * CUT&Run TEs analysis
-* CUT&Run TEs analysis
+* ATAC-seq TEs analysis
 * single cell TEs analysis
 
 
