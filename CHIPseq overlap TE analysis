@@ -1,0 +1,57 @@
+############the CHIP-seq analyzed by snakepipes and overlap with TEs#############
+#####load snakepipes####### 
+module load snakePipes/2.2.3 &&cd /path/to/data/
+
+######DNA mapping####### 
+DNA-mapping -i /path/to/data/ -o /path/to/snakepipes.out -j 20 --DAG --fastqc --dedup --properPairs --mapq 3 --bwBinSize 25 hg38
+
+######peak calling#######
+CHIP-seq -d /path/to/snakepipes.out -j 20 hg38 /path/to/ATAC_config.yaml
+
+
+###############plotHeatmap TEonly_overlap_up8hpi.summit#################
+SlurmEasy -t 50 "computeMatrix reference-point -R /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K27ac_8hpi/TEonly_overlap_H3K27acUP8hpi.summits.bed -S /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27ac_HSV1_1hpi_merged.bw /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27ac_HSV1_2hpi_merged.bw /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27ac_HSV1_4hpi_merged.bw  /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27ac_HSV1_8hpi_merged.bw --missingDataAsZero --skipZeros -p 50 -a 1000 -b 1000 -out onlyTE_up_H3K27ac.gz -bs 5 && plotHeatmap -m onlyTE_up_H3K27ac.gz -o onlyTE_up_H3K27ac.pdf --samplesLabel 1hpi 2hpi 4hpi 8hpi --regionsLabel up_TEs --legendLocation upper-left --colorMap coolwarm --zMin -15 --zMax 15"
+
+
+
+##############H3K4me3 TEs overlap up profile################
+bedtools intersect -wb -b /path/to/TEbed/rmsknew.bed -a /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K4me3_8hpi/Filtered.results.UP.bed|awk '{ printf("%s\t%d\t%d\t%s\t%s\n", $1, int(($2 + $3) / 2), int(($2 + $3) / 2)+1, $6, $22) }' > repeat.H3K4me3UP8hpi.summits.bed
+
+bedtools intersect -wb -b /path/to/TEbed/rmsknew.bed -a /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K4me3_8hpi/Filtered.results.UP.bed|awk '{ printf("%s\t%d\t%d\t%s\t%s\n", $1,$2,$3, $6, $22) }' > repeat.H3K4me3UP8hpi.bed
+
+grep -E -f /path/to/TEbed/only_allTEs_name.tsv repeat.H3K4me3UP8hpi.summits.bed > TEonly_overlap_H3K4me3UP8hpi.summits.bed
+
+grep -E -f /path/to/TEbed/only_allTEs_name.tsv repeat.H3K4me3UP8hpi.bed > TEonly_overlap_H3K4me3UP8hpi.bed
+
+
+###############plotHeatmap TEonly_overlap_up8hpi.summit#################
+SlurmEasy -t 50 "computeMatrix reference-point -R /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K4me3_8hpi/TEonly_overlap_H3K4me3UP8hpi.summits.bed -S /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K4me3_HSV1_1hpi_merged.bw /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K4me3_HSV1_2hpi_merged.bw /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K4me3_HSV1_4hpi_merged.bw  /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K4me3_HSV1_8hpi_merged.bw --missingDataAsZero --skipZeros -p 50 -a 1000 -b 1000 -out onlyTE_up_H3K4me3.gz -bs 5 && plotHeatmap -m onlyTE_up_H3K4me3.gz -o onlyTE_up_H3K4me3.pdf --samplesLabel 1hpi 2hpi 4hpi 8hpi --regionsLabel up_TEs --legendLocation upper-left --colorMap coolwarm --zMin -20 --zMax 20"
+
+
+module load deeptools &&cd /path/to/HSV1/epi_HSV1_monocyte/Output
+##############H3K27me3 TEs overlap down up profile################
+bedtools intersect -wb -b /path/to/TEbed/rmsknew.bed -a /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K27me3_8hpi/Filtered.results.DOWN.bed|awk '{ printf("%s\t%d\t%d\t%s\t%s\n", $1, int(($2 + $3) / 2), int(($2 + $3) / 2)+1, $6, $22) }' > repeat.H3K27me3down8hpi.summits.bed
+
+grep -E -f /path/to/TEbed/only_allTEs_name.tsv repeat.H3K27me3down8hpi.summits.bed > TEonly_overlap_H3K27me3down8hpi.summits.bed
+
+bedtools intersect -wb -b /path/to/TEbed/rmsknew.bed -a /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K27me3_8hpi/Filtered.results.DOWN.bed|awk '{ printf("%s\t%d\t%d\t%s\t%s\n", $1, $2,$3, $6, $22) }' > repeat.H3K27me3down8hpi.bed
+
+grep -E -f /path/to/TEbed/only_allTEs_name.tsv repeat.H3K27me3down8hpi.bed > TEonly_overlap_H3K27me3down8hpi.bed
+
+###############plotHeatmap TEonly_overlap_up8hpi.summit#################
+SlurmEasy -t 50 "computeMatrix reference-point -R /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K27me3_8hpi/TEonly_overlap_H3K27me3down8hpi.summits.bed -S /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27me3_HSV1_1hpi_merged.bw /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27me3_HSV1_2hpi_merged.bw /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27me3_HSV1_4hpi_merged.bw  /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K27me3_HSV1_8hpi_merged.bw --missingDataAsZero --skipZeros -p 50 -a 1000 -b 1000 -out onlyTE_down_H3K27me3.gz -bs 5 && plotHeatmap -m onlyTE_down_H3K27me3.gz -o onlyTE_down_H3K27me3.pdf --samplesLabel 1hpi 2hpi 4hpi 8hpi --regionsLabel up_TEs --legendLocation upper-left --colorMap coolwarm --zMin -7 --zMax 7"
+
+
+##############H3K9me3 TEs overlap down up profile################
+bedtools intersect -wb -b /path/to/TEbed/rmsknew.bed -a /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K9me3_8hpi/Filtered.results.DOWN.bed|awk '{ printf("%s\t%d\t%d\t%s\t%s\n", $1, int(($2 + $3) / 2), int(($2 + $3) / 2)+1, $6, $22) }' > repeat.H3K9me3down8hpi.summits.bed
+
+bedtools intersect -wb -b /path/to/TEbed/rmsknew.bed -a /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K9me3_8hpi/Filtered.results.DOWN.bed|awk '{ printf("%s\t%d\t%d\t%s\t%s\n", $1,$2,$3, $6, $22) }' > repeat.H3K9me3down8hpi.bed
+
+grep -E -f /path/to/TEbed/only_allTEs_name.tsv repeat.H3K9me3down8hpi.summits.bed > TEonly_overlap_H3K9me3down8hpi.summits.bed
+
+grep -E -f /path/to/TEbed/only_allTEs_name.tsv repeat.H3K9me3down8hpi.bed > TEonly_overlap_H3K9me3down8hpi.bed
+
+###############plotHeatmap TEonly_overlap_up8hpi.summit#################
+SlurmEasy -t 50 "computeMatrix reference-point -R /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/CSAW_MACS2_H3K9me3_8hpi/TEonly_overlap_H3K9me3down8hpi.summits.bed -S /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K9me3_HSV1_1hpi_merged.bw /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K9me3_HSV1_2hpi_merged.bw /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K9me3_HSV1_4hpi_merged.bw  /path/to/HSV1/epi_HSV1_monocyte/human_DNAmapping.files.out/deepTools_ChIP/bamCompare/H3K9me3_HSV1_8hpi_merged.bw --missingDataAsZero --skipZeros -p 50 -a 1000 -b 1000 -out onlyTE_down_H3K9me3.gz -bs 5 && plotHeatmap -m onlyTE_down_H3K9me3.gz -o onlyTE_down_H3K9me3.pdf --samplesLabel 1hpi 2hpi 4hpi 8hpi --regionsLabel up_TEs --legendLocation upper-left --colorMap coolwarm --zMin -8 --zMax 8"
+
+
